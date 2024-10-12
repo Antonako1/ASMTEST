@@ -1,1 +1,1 @@
-Graphical clock made with NASM and Windows API
+Graphical clock made with MASM and Windows API
