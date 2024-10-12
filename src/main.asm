@@ -1,19 +1,17 @@
 .386
-.model flat, stdcall
-option casemap:none
+.model          flat, stdcall
+option          casemap:none
 
-include \masm32\include\windows.inc
-include \masm32\include\user32.inc
-include \masm32\include\kernel32.inc
-include \masm32\include\gdi32.inc
+include         \masm32\include\windows.inc
+include         \masm32\include\user32.inc
+include         \masm32\include\kernel32.inc
+include         \masm32\include\gdi32.inc
 
-includelib \masm32\lib\kernel32.lib
-includelib \masm32\lib\user32.lib
-includelib \masm32\lib\gdi32.lib
+includelib      \masm32\lib\kernel32.lib
+includelib      \masm32\lib\user32.lib
+includelib      \masm32\lib\gdi32.lib
 
-WinMain proto :DWORD, :DWORD, :DWORD, :DWORD
-WindowHeight    equ     640
-WindowWidth     equ     480
+WinMain         proto   :DWORD, :DWORD, :DWORD, :DWORD
 
 .DATA
     winClassName    db  "ASMTEST", 0
@@ -22,13 +20,15 @@ WindowWidth     equ     480
     msgText         db 'WndProc run', 0
     msgCaption      db 'WndProc is running!', 0
     MB_OKCANCEL     equ 1
+    WindowHeight    dd  640
+    WindowWidth     dd  480
 
 .CODE
 Start:
 WinMainCRTStartup proc
     LOCAL   msg:MSG
-    local   hWnd:HWND
-    local   hInst:HINSTANCE
+    LOCAL   hWnd:HWND
+    LOCAL   hInst:HINSTANCE
 
     push    NULL
     call    GetModuleHandle
@@ -54,8 +54,10 @@ WinMainCRTStartup proc
     push    hInst
     push    NULL
     push    NULL
-    push    WindowHeight
-    push    WindowWidth
+    mov     eax, [WindowHeight]
+    push    eax
+    mov     eax, [WindowWidth]
+    push    eax
     push    CW_USEDEFAULT
     push    CW_USEDEFAULT
     push    WS_OVERLAPPEDWINDOW + WS_VISIBLE
@@ -65,7 +67,7 @@ WinMainCRTStartup proc
     call    CreateWindowExA
 
     cmp     eax, NULL
-    je      WinMainRet
+    je      WinMainReturn
     mov     hWnd, eax
 
     push eax                        ; force paint
@@ -92,7 +94,7 @@ WinMainCRTStartup proc
         jmp MessageLoop
     MessagesDone:
         mov eax, msg.wParam
-    WinMainRet:
+    WinMainReturn:
         ret
 WinMainCRTStartup endp
 
@@ -109,8 +111,21 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     cmp     uMsg, WM_PAINT
     je      CASE_WM_PAINT
     ;=========================
+    cmp     uMsg, WM_SIZE
+    je      CASE_WM_SIZE
+    ;=========================
     jmp     CASE_DEFAULT
     ;=========================
+    CASE_WM_SIZE:
+        lea     eax, lParam
+        mov     ebx, eax
+        shr     eax, 16
+        mov     [WindowHeight], eax
+        mov     eax, ebx
+        shl     eax, 16
+        shr     eax, 16
+        mov     [WindowWidth], eax
+        ret
     CASE_WM_PAINT:
         lea     eax, ps
         push    eax
@@ -127,10 +142,11 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hWnd
         call    GetClientRect
 
-        mov     eax, 80
+        mov     eax, [WindowHeight]
+        shr     eax, 1
         mov     rect.top, eax
 
-        push    DT_CENTER + DT_WORDBREAK + DT_EDITCONTROL
+        push    DT_CENTER + DT_VCENTER + DT_WORDBREAK + DT_EDITCONTROL
         lea     eax, rect
         push    eax
         push    -1

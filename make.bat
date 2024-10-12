@@ -14,6 +14,7 @@ if not defined DevEnvDir (
 
 cd src
 "%MASMPATH%\ml.exe" /c /coff .\main.asm
+"%MASMPATH%\ml.exe" /c /coff .\clck.asm
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Assembling error! Exiting...
     GOTO ERROR_END
@@ -22,7 +23,7 @@ cl.exe  .\main.obj                                                              
         "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\user32.lib"     ^
         "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\kernel32.lib"   ^
         "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\gdi32.lib"      ^
-        /link /ENTRY:WinMainCRTStartup /SUBSYSTEM:WINDOWS
+        /link /ENTRY:Start /SUBSYSTEM:WINDOWS
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Compilation error! Exiting...
     GOTO ERROR_END
