@@ -9,24 +9,30 @@ SET "MASMPATH=C:\masm32\bin"
 SET /A "RUN_AFTER_COMPILE=1" 
 
 if not defined DevEnvDir ( 
-    call "%TOOLSPATH%\VsDevCmd.bat" -arch=amd64
+    call "%TOOLSPATH%\VsDevCmd.bat"
 )
 
 cd src
-"%MASMPATH%\ml.exe" /c /coff .\main.asm
-"%MASMPATH%\ml.exe" /c /coff .\clck.asm
+"%MASMPATH%\ml.exe" /c /coff /Fl .\main.asm
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Assembling error! Exiting...
     GOTO ERROR_END
 )
-cl.exe  .\main.obj                                                                      ^
-        "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\user32.lib"     ^
-        "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\kernel32.lib"   ^
-        "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64\gdi32.lib"      ^
-        /link /ENTRY:Start /SUBSYSTEM:WINDOWS
+"%MASMPATH%\ml.exe" /c /coff /Fl .\clck.asm
+IF %ERRORLEVEL% NEQ 0 (
+    ECHO Assembling error! Exiting...
+    GOTO ERROR_END
+)
+set "Q=\masm32\lib"
+cl.exe  .\main.obj .\clck.obj                   ^
+        "%Q%\user32.lib"                        ^
+        "%Q%\kernel32.lib"                      ^
+        "%Q%\gdi32.lib"                         ^
+        "%Q%\msvcrt.lib"                        ^
+        /link /ENTRY:Start /SUBSYSTEM:WINDOWS /DEBUG
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Compilation error! Exiting...
-    GOTO ERROR_END
+    GOTO ERROR_END  
 )
 IF %RUN_AFTER_COMPILE% EQU 1 (
     echo running!
@@ -44,3 +50,5 @@ exit /B 1
 :SUCCESS_END
 endlocal
 exit /B 0
+
+:END

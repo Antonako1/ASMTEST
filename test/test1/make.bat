@@ -6,7 +6,7 @@ if not defined DevEnvDir (
     call "%TOOLSPATH%\VsDevCmd.bat"
 )
 cd test
-cl.exe test.c user32.lib gdi32.lib
+cl.exe test.c user32.lib gdi32.lib kernel32.lib
 
 call test.exe
 endlocal
