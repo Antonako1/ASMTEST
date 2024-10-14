@@ -33,7 +33,9 @@ LINE_DRAW_PROCEDURE     proto :HDC, :WORD, :REAL4, :REAL4, :REAL4
     formatStr       DB  "%02d:%02d:%02d.%02d", 0
     
     msgTitle        DB  "Oh no!", 0
-    msgText         DB  "Failure somewhere!", 0
+    msgText1        DB  "EXIT!", 0
+    msgText2        DB  "DRAW ERROR!", 0
+    msgText3        DB  "TEXT ERROR!", 0
 
     PI              REAL4 3.1415927410125732
     TWO_PI          REAL4 6.2831854820251464
@@ -226,7 +228,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         jmp     ENDTEXT
 
         textout_error:
-        call    TEST_PROC
+        call    FAIL_MESSAGE_3
         
         ENDTEXT:
 
@@ -291,6 +293,11 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         test    eax, eax
         je      DRAW_error
 
+        lea     eax, hbrush
+        push    eax
+        call    DeleteObject
+        
+
         ; MS CIRCLE
         RGB     MSCC_1, MSCC_2, MSCC_3
         push    eax
@@ -338,6 +345,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         call    Ellipse
         test    eax, eax
         je      DRAW_error
+
+        lea     eax, hbrush
+        push    eax
+        call    DeleteObject
         
         ; Lines:
         ;   eax: from
@@ -378,6 +389,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         cmp     edx, 1
         je      DRAW_error
 
+        lea     eax, hpen
+        push    eax
+        call    DeleteObject
 
         ; HOUR HAND
         RGB     HHC_1, HHC_2, HHC_3
@@ -414,6 +428,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         cmp     edx, 1
         je      DRAW_error
 
+        lea     eax, hpen
+        push    eax
+        call    DeleteObject
+
         ; MINUTE HAND
         RGB MHC_1, MHC_2, MHC_3
         push    eax
@@ -449,6 +467,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         cmp     edx, 1
         je      DRAW_error
 
+        lea     eax, hpen
+        push    eax
+        call    DeleteObject
+
         ; SECOND HAND
         RGB SHC_1, SHC_2, SHC_3
         push    eax
@@ -482,25 +504,36 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         cmp     edx, 1
         je      DRAW_error
 
-        lea     eax, hbrush
+        lea     eax, hpen
         push    eax
         call    DeleteObject
+
+        
         
         jmp     ENDPAINT
         DRAW_error:
-        call    TEST_PROC
+        call    FAIL_MESSAGE_2
         ENDPAINT:
         lea     eax, ps
         push    eax
         push    hWnd
-        call    EndPaint        
+        call    EndPaint
+        
+        lea     eax, hbrush
+        push    eax
+        call    DeleteObject  
+
+        lea     eax, hpen
+        push    eax
+        call    DeleteObject    
+
         jmp     CASE_OUT
     CASE_WM_DESTROY:
         push    1
         push    hWnd
         call    KillTimer
 
-        call    TEST_PROC
+        call    FAIL_MESSAGE_1
 
         push    0
         call    PostQuitMessage
@@ -681,14 +714,30 @@ LINE_DRAW_PROCEDURE proc hdc:HDC, value:WORD, max_value:REAL4, radius:REAL4, h_l
     ret
 LINE_DRAW_PROCEDURE endp
 
-TEST_PROC proc
+FAIL_MESSAGE_1 proc
     push    MB_ICONWARNING
     push    offset msgTitle
-    push    offset msgText
+    push    offset msgText1
     push    0
     call    MessageBoxA
     ret
-TEST_PROC endp
+FAIL_MESSAGE_1 endp
+FAIL_MESSAGE_2 proc
+    push    MB_ICONWARNING
+    push    offset msgTitle
+    push    offset msgText2
+    push    0
+    call    MessageBoxA
+    ret
+FAIL_MESSAGE_2 endp
+FAIL_MESSAGE_3 proc
+    push    MB_ICONWARNING
+    push    offset msgTitle
+    push    offset msgText3
+    push    0
+    call    MessageBoxA
+    ret
+FAIL_MESSAGE_3 endp
 
 STRLEN proc string: PTR BYTE
     mov     eax, 1
