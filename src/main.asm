@@ -26,8 +26,8 @@ LINE_DRAW_PROCEDURE     proto :HDC, :WORD, :REAL4, :REAL4, :REAL4
     winClassName    db  "ASMTEST", 0
     winAppName      db  "ASMTEST, GUI", 0
     winClass        WNDCLASSEX { SIZEOF WNDCLASSEX, CS_HREDRAW or CS_VREDRAW, WndProc, 0, 0, 0, IDI_APPLICATION, 0, COLOR_3DSHADOW + 1, 0, winClassName, IDI_APPLICATION };
-    WindowHeight    dd  640
-    WindowWidth     dd  780
+    WindowHeight    dd  640;DONT TOUCH
+    WindowWidth     dd  780;DONT TOUCH
     stS SYSTEMTIME  <>
     buffer          DB  16 DUP(?)               ; FOR SPRINTF
     formatStr       DB  "%02d:%02d:%02d.%02d", 0
@@ -303,6 +303,101 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ; test    eax, eax
         ; je      DRAW_error
 
+        ; CENTER ELLIPSE
+        RGB     0,0,0
+        push    eax
+        call    CreateSolidBrush
+        mov     hbrush, eax
+        
+        push    hbrush
+        push    hdc
+        call    SelectObject
+
+
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+
+        ; BOTTOM
+        xor     edx, edx
+        mov     edx, ecx
+        sub     edx, MIDDLE_CIRCLE_SIZE
+        push    edx
+        ; RIGHT
+        xor     edx, edx
+        mov     edx, eax
+        add     edx, MIDDLE_CIRCLE_SIZE
+        push    edx
+        ; TOP
+        xor     edx, edx
+        mov     edx, ecx
+        add     edx, MIDDLE_CIRCLE_SIZE
+        push    edx
+        ; LEFT
+        xor     edx, edx
+        mov     edx, eax
+        sub     edx, MIDDLE_CIRCLE_SIZE
+        push    edx
+
+        push    hdc
+        call    Ellipse
+
+        ; CLOCK LINES
+        RGB     0,0,0
+        invoke  CreatePen, PS_SOLID, 2, eax
+        mov     hpen, eax
+        invoke  SelectObject, hdc, eax
+
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+
+        invoke  MoveToEx, hdc, eax, TWELVE_START_Y, NULL
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  LineTo, hdc, eax, TWELVE_END_Y
+
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  MoveToEx, hdc, THREE_START_X, ecx, NULL
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  LineTo, hdc, THREE_END_X, ecx
+        
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  MoveToEx, hdc, eax, SIX_START_Y, NULL
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  LineTo, hdc, eax, SIX_END_Y
+        
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  MoveToEx, hdc, NINE_START_X, ecx, NULL
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+        invoke  LineTo, hdc, NINE_END_X, ecx
+
+        lea     eax, hpen
+        invoke  DeleteObject, eax
+
+
         ; MS CIRCLE
         RGB     MSCC_1, MSCC_2, MSCC_3
         push    eax
@@ -352,6 +447,48 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         call    Ellipse
         ; test    eax, eax
         ; je      DRAW_error
+
+
+        ;MS CENTER ELLIPSE
+
+        RGB     0,0,0
+        push    eax
+        call    CreateSolidBrush
+        mov     hbrush, eax
+        
+        push    hbrush
+        push    hdc
+        call    SelectObject
+
+
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+
+        ; BOTTOM
+        xor     edx, edx
+        mov     edx, ecx
+        sub     edx, MS_MIDDLE_CIRCLE_SIZE
+        push    edx
+        ; RIGHT
+        xor     edx, edx
+        mov     edx, eax
+        add     edx, MS_MIDDLE_CIRCLE_SIZE
+        push    edx
+        ; TOP
+        xor     edx, edx
+        mov     edx, ecx
+        add     edx, MS_MIDDLE_CIRCLE_SIZE
+        push    edx
+        ; LEFT
+        xor     edx, edx
+        mov     edx, eax
+        sub     edx, MS_MIDDLE_CIRCLE_SIZE
+        push    edx
+
+        push    hdc
+        call    Ellipse
 
         lea     eax, hbrush
         push    eax
@@ -409,7 +546,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ; HOUR HAND
         RGB     HHC_1, HHC_2, HHC_3
         push    eax
-        push    2
+        push    3
         push    PS_SOLID
         call    CreatePen
         ; test    eax, eax
@@ -495,7 +632,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ; SECOND HAND
         RGB SHC_1, SHC_2, SHC_3
         push    eax
-        push    2
+        push    1
         push    PS_SOLID
         call    CreatePen
         ; test    eax, eax
@@ -512,11 +649,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax ; CENTERY for MAIN_CIRCLE
         push    ecx ; CENTERX for MAIN_CIRCLE
         
-        push    NULL
-        push    ecx
-        push    eax
-        push    hdc
-        call    MoveToEx
+        invoke  MoveToEx, hdc, eax, ecx, NULL
         ; test    eax, eax
         ; je      DRAW_error
 
@@ -528,8 +661,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         je      DRAW_error
 
         lea     eax, hpen
-        push    eax
-        call    DeleteObject
+        invoke  DeleteObject, eax
         ; test    eax, eax
         ; je      DRAW_error
 
@@ -540,21 +672,17 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         call    FAIL_MESSAGE_2
         ENDPAINT:
         lea     eax, ps
-        push    eax
-        push    hWnd
-        call    EndPaint
+        invoke  EndPaint, hWnd, eax
         ; test    eax, eax
         ; je      DRAW_error
         
         lea     eax, hbrush
-        push    eax
-        call    DeleteObject  
+        invoke  DeleteObject, eax
         ; test    eax, eax
         ; je      DRAW_error
 
         lea     eax, hpen
-        push    eax
-        call    DeleteObject
+        invoke  DeleteObject, eax
         ; test    eax, eax
         ; je      DRAW_error 
 
@@ -578,83 +706,6 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         jmp     CASE_OUT
     CASE_OUT:
     ret
-    
-
-    ; LINE_DRAW_PROCEDURE:
-    ;     pop     edx
-    ;     pop     edx
-    ;     pop     edx
-    ;     xor     edx, edx
-    ;     pop     dx
-
-    ;     fld     [PI]
-    ;     fdiv    [ONEHUNDREDEIGHTY]
-    ;     fstp    [CALC]
-
-
-
-    ;     ; !PARAM1
-    ;     fild    WORD PTR [ebp+2]            ; MS
-    ;     fmul    [THREEHUNDREDSIXTY]         ; 360deg
-    ;     ; !PARAM2
-    ;     fdiv    DWORD PTR [ebp+4]           ; MAX VAL
-    ;     fmul    [CALC]                      ; PI CALC
-    ;     fstp    [CALC]                      ; THETA
-
-    ;     ;CENTERY
-    ;     mov     [float_to_dword], ecx       ; LOAD CENTERY
-    ;     fild    DWORD PTR [float_to_dword]  ; LOADED
-    ;     fld     [CALC]                      ; THETA
-    ;     fcos                                ; COS
-    ;     ; !PARAM3
-    ;     fld     DWORD PTR [ebp+8]           ; RADIUS
-    ;     ; !PARAM4
-    ;     fld     DWORD PTR [ebp+12]          ; LENGTH
-    ;     fmul                                ; MULTIPLY
-    ;     fmul
-    ;     fsub                                ; SUBTRACT
-    ;     fstp    [CALC_TEMP]                 ; RES
-
-    ;     ; CAST FLOAT TO INT
-    ;     fld     [CALC_TEMP]
-    ;     fistp   DWORD PTR [float_to_dword]
-    ;     push    float_to_dword
-        
-    ;     ; CENTERX CAST INT TO FLOAT
-    ;     mov     [float_to_dword], eax          
-    ;     fild    DWORD PTR [float_to_dword]
-    ;     fstp    [CALC_TEMP]
-
-    ;     ; radius +
-    ;     fld     [CALC]              ; THETA
-    ;     fsin                        ; SIN
-    ;     ; !PARAM3
-    ;     fld     DWORD PTR [ebp-8]   ; RADIUS
-    ;     ; !PARAM4
-    ;     fld     DWORD PTR [ebp-12]  ; LENGTH
-    ;     fmul
-    ;     fmul                        ; MULTIPLY
-    ;     fadd    [CALC_TEMP]         ; ADD CENTERX
-    ;     fstp    [CALC_TEMP]         ; LOAD EP_X
-
-    ;     ; CAST FLOAT TO INT
-    ;     fld     [CALC_TEMP]
-    ;     fistp   DWORD PTR [float_to_dword]
-
-    ;     push    float_to_dword             ; X
-    ;     push    hdc
-    ;     call    LineTo
-    ;     test    eax, eax
-    ;     je      LINETOERROR
-    ;     jmp     RETIRM
-    ;     LINETOERROR:
-    ;     ; mov     esp, ebp
-    ;     ; pop     ebp
-    ;     jmp     DRAW_error
-    ;     RETIRM:
-    ;     ret
-
-
 WndProc endp
 
 

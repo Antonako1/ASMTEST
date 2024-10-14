@@ -1,6 +1,6 @@
 IFNDEF CLOCK_MACROS
 ; MACROS
-    CLOCK_REF_RATE      equ 100
+    CLOCK_REF_RATE      equ 50
     MAIN_CLOCK_RADIUS   equ 250
     ; H_HAND_LENGTH       equ 60
     ; M_HAND_LENGTH       equ 25
@@ -40,6 +40,30 @@ IFNDEF CLOCK_MACROS
     HHC_3              equ 150
 
 
+
+    ; STATIC LINE POS'
+    ; TWELVE_START_X      equ 390
+    TWELVE_START_Y      equ 75
+    ; TWELVE_END_X        equ 390
+    TWELVE_END_Y        equ 200
+
+    THREE_START_X       equ 150
+    ; THREE_START_Y       equ 100
+    THREE_END_X         equ 275
+    ; THREE_END_Y         equ 200
+
+    ; SIX_START_X         equ 390
+    SIX_START_Y         equ 400
+    ; SIX_END_X           equ 390
+    SIX_END_Y           equ 550
+
+    NINE_START_X        equ 475
+    ; NINE_START_Y        equ 100
+    NINE_END_X          equ 600
+    ; NINE_END_Y          equ 200
+
+    MIDDLE_CIRCLE_SIZE  equ 10
+MS_MIDDLE_CIRCLE_SIZE   equ 5
     RGB MACRO red, green, blue
         xor     eax, eax
         mov     al, blue

@@ -27,6 +27,7 @@ update_get_stS proc
 	
 	mov	eax, [ebp+8]
 	push 	eax
+	; call 	GetSystemTime
 	call 	GetLocalTime
 
 	pop	ebp
