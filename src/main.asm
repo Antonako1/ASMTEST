@@ -200,6 +200,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    TRANSPARENT
         push    hdc
         call    SetBkMode
+        test    eax, eax
+        je      textout_error
 
         xor     eax, eax
         mov     ax, stS.wMilliseconds
@@ -239,18 +241,21 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hWnd
         call    GetClientRect
+        ; test    eax, eax
+        ; je      DRAW_error      ;??
 
         RGB     MCC_1, MCC_2, MCC_3
         push    eax
         call    CreateSolidBrush
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         mov     hbrush, eax
-
+        
         push    hbrush
         push    hdc
         call    SelectObject
-
+        ; test    eax, eax
+        ; je      DRAW_error
         ;   CIRCLES:
         ;       eax: centerX
         ;       ecx: centerY
@@ -290,25 +295,27 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         
         push    hdc
         call    Ellipse
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
 
-        lea     eax, hbrush
-        push    eax
+        push    hbrush
         call    DeleteObject
-        
+        ; test    eax, eax
+        ; je      DRAW_error
 
         ; MS CIRCLE
         RGB     MSCC_1, MSCC_2, MSCC_3
         push    eax
         call    CreateSolidBrush
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         mov     hbrush, eax
         push    hbrush
         push    hdc
         call    SelectObject
-
+        ; test    eax, eax
+        ; je      DRAW_error
+        
         xor     eax, eax
         mov     ecx, eax
         mov     edx, eax
@@ -343,13 +350,15 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
         push    hdc
         call    Ellipse
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
 
         lea     eax, hbrush
         push    eax
         call    DeleteObject
-        
+        ; test    eax, eax
+        ; je      DRAW_error
+
         ; Lines:
         ;   eax: from
         ;   ecx: to
@@ -361,12 +370,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    2
         push    PS_SOLID
         call    CreatePen
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
+        ; test    eax, eax
+        ; je      DRAW_error
         
 
         
@@ -379,8 +390,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hdc
         call    MoveToEx
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         
         pop     ecx;centery. FOR MS_CIRCLE. NO PRESERVE
         pop     eax;centerx. FOR MS_CIRCLE. NO PRESERVE
@@ -392,6 +403,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hpen
         push    eax
         call    DeleteObject
+        ; test    eax, eax
+        ; je      DRAW_error
 
         ; HOUR HAND
         RGB     HHC_1, HHC_2, HHC_3
@@ -399,12 +412,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    2
         push    PS_SOLID
         call    CreatePen
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
+        ; test    eax, eax
+        ; je      DRAW_error
         
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -416,8 +431,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hdc
         call    MoveToEx
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -431,6 +446,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hpen
         push    eax
         call    DeleteObject
+        ; test    eax, eax
+        ; je      DRAW_error
 
         ; MINUTE HAND
         RGB MHC_1, MHC_2, MHC_3
@@ -438,12 +455,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    2
         push    PS_SOLID
         call    CreatePen
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
+        ; test    eax, eax
+        ; je      DRAW_error
 
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -455,8 +474,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hdc
         call    MoveToEx
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -464,12 +483,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    ecx ; CENTERX for MAIN_CIRCLE
         
         invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wMinute], [M_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [M_HAND_LENGTH] 
-        cmp     edx, 1
-        je      DRAW_error
+        ; cmp     edx, 1
+        ; je      DRAW_error
 
         lea     eax, hpen
         push    eax
         call    DeleteObject
+        ; test    eax, eax
+        ; je      DRAW_error
 
         ; SECOND HAND
         RGB SHC_1, SHC_2, SHC_3
@@ -477,12 +498,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    2
         push    PS_SOLID
         call    CreatePen
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
+        ; test    eax, eax
+        ; je      DRAW_error
 
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -494,8 +517,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hdc
         call    MoveToEx
-        test    eax, eax
-        je      DRAW_error
+        ; test    eax, eax
+        ; je      DRAW_error
 
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -507,6 +530,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hpen
         push    eax
         call    DeleteObject
+        ; test    eax, eax
+        ; je      DRAW_error
 
         
         
@@ -518,14 +543,20 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hWnd
         call    EndPaint
+        ; test    eax, eax
+        ; je      DRAW_error
         
         lea     eax, hbrush
         push    eax
         call    DeleteObject  
+        ; test    eax, eax
+        ; je      DRAW_error
 
         lea     eax, hpen
         push    eax
-        call    DeleteObject    
+        call    DeleteObject
+        ; test    eax, eax
+        ; je      DRAW_error 
 
         jmp     CASE_OUT
     CASE_WM_DESTROY:
