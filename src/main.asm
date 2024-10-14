@@ -213,7 +213,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    OFFSET formatStr
         push    OFFSET buffer
         call    sprintf
-        add     esp, 8
+        add     esp, 24
 
         push    OFFSET buffer
         call    STRLEN
@@ -715,7 +715,7 @@ LINE_DRAW_PROCEDURE proc hdc:HDC, value:WORD, max_value:REAL4, radius:REAL4, h_l
 LINE_DRAW_PROCEDURE endp
 
 FAIL_MESSAGE_1 proc
-    push    MB_ICONWARNING
+    push    0
     push    offset msgTitle
     push    offset msgText1
     push    0
@@ -723,7 +723,7 @@ FAIL_MESSAGE_1 proc
     ret
 FAIL_MESSAGE_1 endp
 FAIL_MESSAGE_2 proc
-    push    MB_ICONWARNING
+    push    MB_ICONERROR
     push    offset msgTitle
     push    offset msgText2
     push    0
@@ -731,7 +731,7 @@ FAIL_MESSAGE_2 proc
     ret
 FAIL_MESSAGE_2 endp
 FAIL_MESSAGE_3 proc
-    push    MB_ICONWARNING
+    push    MB_ICONERROR
     push    offset msgTitle
     push    offset msgText3
     push    0
