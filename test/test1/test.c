@@ -76,6 +76,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             sprintf(buffer, "%d:%d:%d.%d", stS.wHour, stS.wMinute, stS.wSecond, stS.wMilliseconds);
             TextOutA(hdc, 50, 50, buffer, strlen(buffer)); 
             EndPaint(hWnd, &ps);
+
+
+            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 255));  // Blue color
+            DeleteObject(hBrush);
             break;
 
         case WM_DESTROY:

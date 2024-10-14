@@ -7,6 +7,7 @@ include         \masm32\include\user32.inc
 include         \masm32\include\kernel32.inc
 include         \masm32\include\gdi32.inc
 include         \masm32\include\msvcrt.inc
+include         .\macro.inc
 
 includelib      \masm32\lib\kernel32.lib
 includelib      \masm32\lib\user32.lib
@@ -17,20 +18,30 @@ WinMain         proto   :DWORD, :DWORD, :DWORD, :DWORD
 extern C        sprintf :proc
 
 
-CLOCK_REF_RATE      equ 1
+
 
 .DATA
     winClassName    db  "ASMTEST", 0
     winAppName      db  "ASMTEST, GUI", 0
     winClass        WNDCLASSEX { SIZEOF WNDCLASSEX, CS_HREDRAW or CS_VREDRAW, WndProc, 0, 0, 0, IDI_APPLICATION, 0, COLOR_3DSHADOW + 1, 0, winClassName, IDI_APPLICATION };
     WindowHeight    dd  640
-    WindowWidth     dd  640
+    WindowWidth     dd  780
     stS SYSTEMTIME  <>
     buffer          DB  16 DUP(?)               ; FOR SPRINTF
     formatStr       DB  "%02d:%02d:%02d.%02d", 0
-
+    
     msgTitle        DB  "Oh no!", 0
     msgText         DB  "Failure somewhere!", 0
+
+    PI              REAL4 3.1415927410125732
+    CALC            REAL4 0.0000000000000000   
+    CALC_TEMP       REAL4 0.0000000000000000  
+
+THREEHUNDREDSIXTY   REAL4 360.0
+ONEHUNDREDEIGHTY    REAL4 180.0
+MS_MAX_VALUE        REAL4 1000.0
+MS_CLOCK_RADIUS_f   REAL4 75.0
+
 .CODE
 Start:
 WinMainCRTStartup proc
@@ -67,7 +78,12 @@ WinMainCRTStartup proc
     push    eax
     push    CW_USEDEFAULT
     push    CW_USEDEFAULT
-    push    WS_OVERLAPPEDWINDOW + WS_VISIBLE
+    mov     eax, WS_OVERLAPPEDWINDOW
+    or      eax, WS_VISIBLE
+    mov     ecx, WS_THICKFRAME or WS_MAXIMIZEBOX
+    not     ecx
+    and     eax, ecx
+    push    eax
     push    OFFSET winAppName
     push    OFFSET winClassName
     push    0
@@ -117,6 +133,10 @@ WinMainCRTStartup endp
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL   ps:PAINTSTRUCT
     LOCAL   hdc:HDC
+    LOCAL   rect:RECT
+    LOCAL   hbrush:HBRUSH
+    LOCAL   hpen:HPEN
+    LOCAL   float_to_dword:DWORD
     ; LOCAL: CIRCLE, LINE x3 || CIRCLE x2, LINE x4 (w/ ms)
 
     ;=========================
@@ -180,32 +200,289 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    OFFSET formatStr
         push    OFFSET buffer
         call    sprintf
-        add     esp, 12
+        ;? add     esp, 12
 
         push    OFFSET buffer
         call    STRLEN
         push    eax             ; strlen
         push    OFFSET buffer
-        push    50
-        push    50
+        push    10
+        push    10
         push    hdc
         call    TextOutA
         test    eax, eax
         je      textout_error
-        jmp     ENDPAINTING
+        jmp     ENDTEXT
 
         textout_error:
         call    TEST_PROC
         
-        ENDPAINTING:
+        ENDTEXT:
+
+
+        ; CLOCK INTERFACE
+
+        lea     eax, rect
+        push    eax
+        push    hWnd
+        call    GetClientRect
+
+        RGB     MCC_1, MCC_2, MCC_3
+        push    eax
+        call    CreateSolidBrush
+        test    eax, eax
+        je      DRAW_error
+        mov     hbrush, eax
+
+        push    hbrush
+        push    hdc
+        call    SelectObject
+
+        ;   CIRCLES:
+        ;       eax: centerX
+        ;       ecx: centerY
+        ;       edx: temp
+        ;
+        ; MAIN CIRCLE
+        xor     eax, eax
+        mov     ecx, eax
+        mov     edx, eax
+        
+        mov     eax, rect.left
+        add     eax, rect.right
+        shr     eax, 1
+
+        mov     ecx, rect.top
+        add     ecx, rect.bottom
+        shr     ecx, 1
+
+        push    eax
+        push    ecx
+
+        mov     edx, ecx
+        add     edx, MAIN_CLOCK_RADIUS
+        push    edx
+
+        mov     edx, eax
+        add     edx, MAIN_CLOCK_RADIUS
+        push    edx
+        
+        mov     edx, ecx
+        sub     edx, MAIN_CLOCK_RADIUS
+        push    edx
+
+        mov     edx, eax
+        sub     edx, MAIN_CLOCK_RADIUS
+        push    edx
+        
+        push    hdc
+        call    Ellipse
+        test    eax, eax
+        je      DRAW_error
+
+        ; MS CIRCLE
+        RGB     MSCC_1, MSCC_2, MSCC_3
+        push    eax
+        call    CreateSolidBrush
+        test    eax, eax
+        je      DRAW_error
+        mov     hbrush, eax
+        push    hbrush
+        push    hdc
+        call    SelectObject
+
+        xor     eax, eax
+        mov     ecx, eax
+        mov     edx, eax
+        
+        mov     eax, rect.left
+        add     eax, rect.right
+        shr     eax, 1
+
+        mov     ecx, rect.top
+        add     ecx, rect.bottom
+        shr     ecx, 1
+        add     ecx, 150
+
+        push    eax
+        push    ecx
+
+        mov     edx, ecx
+        add     edx, MS_CLOCK_RADIUS
+        push    edx
+
+        mov     edx, eax
+        add     edx, MS_CLOCK_RADIUS
+        push    edx
+        
+        mov     edx, ecx
+        sub     edx, MS_CLOCK_RADIUS
+        push    edx
+
+        mov     edx, eax
+        sub     edx, MS_CLOCK_RADIUS
+        push    edx
+
+        push    hdc
+        call    Ellipse
+        test    eax, eax
+        je      DRAW_error
+        
+        ; Lines:
+        ;   eax: from
+        ;   ecx: to
+        ;   edx: temp
+        ;
+        ; MS HAND
+        RGB     MSHC_1, MSHC_2, MSHC_3
+        push    eax
+        push    2
+        push    PS_SOLID
+        call    CreatePen
+        test    eax, eax
+        je      DRAW_error
+        mov     hpen, eax
+        push    hpen
+        push    hdc
+        call    SelectObject
+
+        
+        pop     ecx ; CENTERY FOR MS_CIRCLE
+        pop     eax ; CENTERX FOR MS_CIRCLE
+        push    eax
+        push    ecx
+
+        push    NULL
+        push    ecx
+        push    eax
+        push    hdc
+        call    MoveToEx
+        test    eax, eax
+        je      DRAW_error
+
+        ; CALCULATE MS POS
+        ; EAX: CENTERX
+        ; ECX: CENTERY
+        ; EDX: TEMP
+        ; CALC: THETA
+        ; CALC_TEMP: TEMP
+        ;
+        ; THETA = (VALUE * 360deg / MAX_VALUE) * (PI / 180)
+        ; EP_X = centerX + radius * sin(theta)
+        ; EP_Y = centerY - radius * cos(theta)
+        
+        pop     ecx;centery
+        pop     eax;centerx
+        
+        ; NOTE: ADD AS CONSTANT?
+        fld     [PI]
+        fdiv    [ONEHUNDREDEIGHTY]
+        fstp    [CALC]
+
+        fild    DWORD PTR [stS.wMilliseconds]   ; MS
+        fmul    [THREEHUNDREDSIXTY]             ; 360deg
+        fdiv    [MS_MAX_VALUE]                  ; MAX VAL
+        fmul    [CALC]                          ; PI CALC
+        fstp    [CALC]                          ; THETA
+
+        ;CENTERY
+        mov     [float_to_dword], ecx       ; LOAD CENTERY
+        fild    DWORD PTR [float_to_dword]  ; LOADED
+        fld     [CALC]              ; THETA
+        fcos                        ; COS
+        fld     [MS_CLOCK_RADIUS_f] ; RADIUS
+        fmul                        ; MULTIPLY
+
+        fsub                                ; SUBTRACT
+        fstp    [CALC_TEMP]                 ; RES
+
+        ; CAST FLOAT TO INT
+        fld     [CALC_TEMP]
+        fistp   DWORD PTR [float_to_dword]
+        push    float_to_dword
+        
+        ; CENTERX CAST INT TO FLOAT
+        mov     [float_to_dword], eax          
+        fild    DWORD PTR [float_to_dword]
+        fstp    [CALC_TEMP]
+
+        ; radius +
+        fld     [CALC]              ; THETA
+        fsin                        ; SIN
+        fld     [MS_CLOCK_RADIUS_f] ; RADIUS
+        fmul                        ; MULTIPLY
+        fadd    [CALC_TEMP]         ; ADD CENTERX
+        fstp    [CALC_TEMP]         ; LOAD EP_X
+
+        ; CAST FLOAT TO INT
+        fld     [CALC_TEMP]
+        fistp   DWORD PTR [float_to_dword]
+
+        push    float_to_dword             ; X
+        push    hdc
+        call    LineTo
+        test    eax, eax
+        je      DRAW_error
+
+        ; HOUR HAND
+        RGB     HHC_1, HHC_2, HHC_3
+        push    eax
+        push    2
+        push    PS_SOLID
+        call    CreatePen
+        test    eax, eax
+        je      DRAW_error
+        mov     hpen, eax
+        push    hpen
+        push    hdc
+        call    SelectObject
+
+        
+        pop     ecx ; CENTERY for main
+        pop     eax ; CENTERX for main
+        ; TODO: PUSH AGAIN?
+        ; push    eax
+        ; push    ecx
+        ; MINUTE HAND
+        RGB     MHC_1, MHC_2, MHC_3
+        push    eax
+        push    2
+        push    PS_SOLID
+        call    CreatePen
+        test    eax, eax
+        je      DRAW_error
+        mov     hpen, eax
+        push    hpen
+        push    hdc
+        call    SelectObject
+
+        ; SECOND HAND
+        RGB     SHC_1, SHC_2, SHC_3
+        push    eax
+        push    2
+        push    PS_SOLID
+        call    CreatePen
+        test    eax, eax
+        je      DRAW_error
+        mov     hpen, eax
+        push    hpen
+        push    hdc
+        call    SelectObject
+
+        lea     eax, hbrush
+        push    eax
+        call    DeleteObject
+        
+        jmp     ENDPAINT
+        DRAW_error:
+        call    TEST_PROC
+        ENDPAINT:
         lea     eax, ps
         push    eax
         push    hWnd
         call    EndPaint        
         jmp     CASE_OUT
     CASE_WM_DESTROY:
-        ; call    TEST_PROC
-
         push    1
         push    hWnd
         call    KillTimer

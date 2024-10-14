@@ -24,20 +24,21 @@ IFNDEF CLOCK_MACROS
     MSHC_2              equ 150
     MSHC_3              equ 0
     
-    ;MS_HAND_COLOUR
-    MSHC_1              equ 150
-    MSHC_2              equ 150
-    MSHC_3              equ 0
+    ;S_HAND_COLOUR
+    SHC_1              equ 150
+    SHC_2              equ 150
+    SHC_3              equ 0
     
-    ;MS_HAND_COLOUR
-    MSHC_1              equ 150
-    MSHC_2              equ 150
-    MSHC_3              equ 0
+    ;M_HAND_COLOUR
+    MHC_1              equ 150
+    MHC_2              equ 150
+    MHC_3              equ 0
     
-    ;MS_HAND_COLOUR
-    MSHC_1              equ 150
-    MSHC_2              equ 150
-    MSHC_3              equ 0
+    ;H_HAND_COLOUR
+    HHC_1              equ 150
+    HHC_2              equ 150
+    HHC_3              equ 0
+
 
     RGB MACRO red, green, blue
         xor     eax, eax

@@ -23,6 +23,7 @@ IF %ERRORLEVEL% NEQ 0 (
     ECHO Assembling error! Exiting...
     GOTO ERROR_END
 )
+
 set "Q=\masm32\lib"
 cl.exe  .\main.obj .\clck.obj                   ^
         "%Q%\user32.lib"                        ^
