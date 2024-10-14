@@ -63,7 +63,8 @@ IFNDEF CLOCK_MACROS
     ; NINE_END_Y          equ 200
 
     MIDDLE_CIRCLE_SIZE  equ 10
-MS_MIDDLE_CIRCLE_SIZE   equ 5
+    MS_MIDDLE_CIRCLE_SIZE   equ 5
+
     RGB MACRO red, green, blue
         xor     eax, eax
         mov     al, blue

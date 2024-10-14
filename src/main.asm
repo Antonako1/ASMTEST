@@ -17,7 +17,7 @@ includelib      \masm32\lib\gdi32.lib
 update_get_stS  proto
 WinMain         proto   :DWORD, :DWORD, :DWORD, :DWORD
 extern C        sprintf :proc
-LINE_DRAW_PROCEDURE     proto :HDC, :WORD, :REAL4, :REAL4, :REAL4
+LINE_DRAW_PROCEDURE     proto :HDC, :REAL4, :REAL4, :REAL4, :REAL4
 
 
 
@@ -44,10 +44,12 @@ LINE_DRAW_PROCEDURE     proto :HDC, :WORD, :REAL4, :REAL4, :REAL4
 
 THREEHUNDREDSIXTY   REAL4 360.0
 ONEHUNDREDEIGHTY    REAL4 180.0
+
 MS_MAX_VALUE        REAL4 1000.0
 H_MAX_VALUE         REAL4 12.0
 M_MAX_VALUE         REAL4 60.0
 S_MAX_VALUE         REAL4 60.0
+
 MS_CLOCK_RADIUS_f   REAL4 75.0
 MAIN_CLOCK_RADIUS_f REAL4 250.0
 
@@ -150,6 +152,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL   rect:RECT
     LOCAL   hbrush:HBRUSH
     LOCAL   hpen:HPEN
+    LOCAL   float_help:REAL4
     ; LOCAL: CIRCLE, LINE x3 || CIRCLE x2, LINE x4 (w/ ms)
 
     ;=========================
@@ -533,7 +536,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         pop     ecx;centery. FOR MS_CIRCLE. NO PRESERVE
         pop     eax;centerx. FOR MS_CIRCLE. NO PRESERVE
 
-        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wMilliseconds], [MS_MAX_VALUE], [MS_CLOCK_RADIUS_f], [MS_HAND_LENGTH] 
+        fild    WORD PTR [stS.wMilliseconds]
+        fstp    float_help
+        invoke  LINE_DRAW_PROCEDURE, hdc, float_help, [MS_MAX_VALUE], [MS_CLOCK_RADIUS_f], [MS_HAND_LENGTH] 
         cmp     edx, 1
         je      DRAW_error
 
@@ -576,7 +581,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax ; CENTERY for MAIN_CIRCLE
         push    ecx ; CENTERX for MAIN_CIRCLE
         
-        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wHour], [H_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [H_HAND_LENGTH] 
+        fild    WORD PTR [stS.wHour]
+        fstp    float_help
+        invoke  LINE_DRAW_PROCEDURE, hdc, float_help, [H_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [H_HAND_LENGTH] 
         cmp     edx, 1
         je      DRAW_error
 
@@ -619,9 +626,11 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax ; CENTERY for MAIN_CIRCLE
         push    ecx ; CENTERX for MAIN_CIRCLE
         
-        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wMinute], [M_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [M_HAND_LENGTH] 
-        ; cmp     edx, 1
-        ; je      DRAW_error
+        fild    WORD PTR [stS.wMinute]
+        fstp    float_help
+        invoke  LINE_DRAW_PROCEDURE, hdc, float_help, [M_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [M_HAND_LENGTH] 
+        cmp     edx, 1
+        je      DRAW_error
 
         lea     eax, hpen
         push    eax
@@ -656,7 +665,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
         
-        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wSecond], [S_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [S_HAND_LENGTH] 
+        fild    WORD PTR [stS.wSecond]
+        fstp    float_help
+        invoke  LINE_DRAW_PROCEDURE, hdc, float_help, [S_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [S_HAND_LENGTH] 
         cmp     edx, 1
         je      DRAW_error
 
@@ -709,36 +720,31 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 WndProc endp
 
 
-LINE_DRAW_PROCEDURE proc hdc:HDC, value:WORD, max_value:REAL4, radius:REAL4, h_length:REAL4
+LINE_DRAW_PROCEDURE proc hdc:HDC, value:REAL4, max_value:REAL4, radius:REAL4, h_length:REAL4
     LOCAL   float_to_dword:DWORD
     
-; CALCULATE MS POS
-; EAX: CENTERX
-; ECX: CENTERY
-; EDX: TEMP
-; CALC: THETA
-; CALC_TEMP: TEMP
-;
-; handle_length = handle_length(.f)*radius
-; THETA = (VALUE * 360deg / MAX_VALUE) * (PI / 180)
-; EP_X = centerX + handle_length * sin(theta)
-; EP_Y = centerY - handle_length * cos(theta)
+    ; CALCULATE MS POS
+    ; EAX: CENTERX
+    ; ECX: CENTERY
+    ; EDX: TEMP
+    ; CALC: THETA
+    ; CALC_TEMP: TEMP
+    ;
+    ; handle_length = handle_length(.f)*radius
+    ; THETA = (VALUE * 360deg / MAX_VALUE) * (PI / 180)
+    ; EP_X = centerX + handle_length * sin(theta)
+    ; EP_Y = centerY - handle_length * cos(theta)
         
 
     ; THETASTART
     fld     [PI]
     fdiv    [ONEHUNDREDEIGHTY]
     fstp    [CALC]                      ; PI/180
-    fild    [value]                     ; MS VALUE
+    fld     [value]                     ; MS VALUE
     fmul    [THREEHUNDREDSIXTY]         ; 360deg
     fdiv    [max_value]                 ; MAX VAL
     fmul    [CALC]                      ; PI CALC
     fstp    [CALC]                      ; THETA
-    ; KEEP RANGE 0-2pi
-    ; fld     [TWO_PI]
-    ; fld     [CALC]
-    ; fprem
-    ; fstp    [CALC]
     ;THETAEND
 
     ;CENTERY
@@ -782,15 +788,15 @@ LINE_DRAW_PROCEDURE proc hdc:HDC, value:WORD, max_value:REAL4, radius:REAL4, h_l
     fistp   DWORD PTR [float_to_dword]
     push    [float_to_dword]        ; X
 
+    xor     edx, edx;retclear
+
     push    hdc
     call    LineTo
     test    eax, eax
     je      LINETOERROR
-    xor     edx, edx
     mov     edx, 0
     jmp     RETIRM
     LINETOERROR:
-    xor     edx, edx
     mov     edx, 1
     RETIRM:
     ret
