@@ -213,7 +213,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    OFFSET formatStr
         push    OFFSET buffer
         call    sprintf
-        ;? add     esp, 12
+        add     esp, 8
 
         push    OFFSET buffer
         call    STRLEN
