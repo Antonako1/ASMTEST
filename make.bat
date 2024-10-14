@@ -5,7 +5,6 @@ setlocal
 cd %~dp0
 SET "TOOLSPATH=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools"
 SET "MASMPATH=C:\masm32\bin"
-:: {0|1}
 SET /A "RUN_AFTER_COMPILE=1" 
 
 if not defined DevEnvDir ( 
@@ -13,12 +12,12 @@ if not defined DevEnvDir (
 )
 
 cd src
-"%MASMPATH%\ml.exe" /c /coff /Fl .\main.asm
+"%MASMPATH%\ml.exe" /c /coff .\main.asm
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Assembling error! Exiting...
     GOTO ERROR_END
 )
-"%MASMPATH%\ml.exe" /c /coff /Fl .\clck.asm
+"%MASMPATH%\ml.exe" /c /coff .\clck.asm
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Assembling error! Exiting...
     GOTO ERROR_END
@@ -30,7 +29,7 @@ cl.exe  .\main.obj .\clck.obj                   ^
         "%Q%\kernel32.lib"                      ^
         "%Q%\gdi32.lib"                         ^
         "%Q%\msvcrt.lib"                        ^
-        /link /ENTRY:Start /SUBSYSTEM:WINDOWS /DEBUG
+        /link /ENTRY:Start /SUBSYSTEM:WINDOWS
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Compilation error! Exiting...
     GOTO ERROR_END  

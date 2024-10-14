@@ -12,19 +12,20 @@ def draw_circle_with_line():
 
     center_x = (100 + 300) / 2
     center_y = (100 + 300) / 2
-    hours = 555
-    radius = 100
+    hours = 4
+    radius = 100  # Main circle radius
+    handle_length = 0.5 * radius  # Handle length is 30% of the radius
 
     # Calculate the angle for the hour hand (in radians)
-    # We convert hours to an angle by multiplying by (360/12) to get degrees, and then convert to radians.
-    theta = (hours * 360 / 1000) * (math.pi / 180)
+    theta = (hours * 360 / 12) * (math.pi / 180)  # Convert hour to angle
     print("THETA LIKE:", theta)
-    # Calculate the end point for the line (hour hand)
-    to_x = center_x + radius * math.sin(theta)
-    # to_y = center_y - radius * math.cos(theta)
-    to_y = 0
+
+    # Calculate the end point for the line (hour hand) using the handle length
+    to_x = center_x + handle_length * math.sin(theta)
+    to_y = center_y - handle_length * math.cos(theta)
     print("Line end point: (", to_x, ",", to_y, ")")
 
+    # Draw the hour hand with the calculated handle length
     canvas.create_line(center_x, center_y, to_x, to_y, fill="red", width=2)
 
     root.mainloop()

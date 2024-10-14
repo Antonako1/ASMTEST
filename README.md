@@ -1,1 +1,1 @@
-Graphical clock made with x86 MASM and Windows API
+MASM TEST

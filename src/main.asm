@@ -13,9 +13,11 @@ includelib      \masm32\lib\kernel32.lib
 includelib      \masm32\lib\user32.lib
 includelib      \masm32\lib\gdi32.lib
 
+; create_circle   proto   :DWORD, :DWORD
 update_get_stS  proto
 WinMain         proto   :DWORD, :DWORD, :DWORD, :DWORD
 extern C        sprintf :proc
+LINE_DRAW_PROCEDURE     proto :HDC, :WORD, :REAL4, :REAL4, :REAL4
 
 
 
@@ -34,13 +36,23 @@ extern C        sprintf :proc
     msgText         DB  "Failure somewhere!", 0
 
     PI              REAL4 3.1415927410125732
+    TWO_PI          REAL4 6.2831854820251464
     CALC            REAL4 0.0000000000000000   
     CALC_TEMP       REAL4 0.0000000000000000  
 
 THREEHUNDREDSIXTY   REAL4 360.0
 ONEHUNDREDEIGHTY    REAL4 180.0
 MS_MAX_VALUE        REAL4 1000.0
+H_MAX_VALUE         REAL4 12.0
+M_MAX_VALUE         REAL4 60.0
+S_MAX_VALUE         REAL4 60.0
 MS_CLOCK_RADIUS_f   REAL4 75.0
+MAIN_CLOCK_RADIUS_f REAL4 250.0
+
+H_HAND_LENGTH       REAL4 0.9
+M_HAND_LENGTH       REAL4 0.8
+S_HAND_LENGTH       REAL4 0.95
+MS_HAND_LENGTH      REAL4 0.8
 
 .CODE
 Start:
@@ -136,7 +148,6 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL   rect:RECT
     LOCAL   hbrush:HBRUSH
     LOCAL   hpen:HPEN
-    LOCAL   float_to_dword:DWORD
     ; LOCAL: CIRCLE, LINE x3 || CIRCLE x2, LINE x4 (w/ ms)
 
     ;=========================
@@ -345,13 +356,13 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hpen
         push    hdc
         call    SelectObject
+        
 
         
         pop     ecx ; CENTERY FOR MS_CIRCLE
         pop     eax ; CENTERX FOR MS_CIRCLE
         push    eax
         push    ecx
-
         push    NULL
         push    ecx
         push    eax
@@ -359,70 +370,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         call    MoveToEx
         test    eax, eax
         je      DRAW_error
-
-        ; CALCULATE MS POS
-        ; EAX: CENTERX
-        ; ECX: CENTERY
-        ; EDX: TEMP
-        ; CALC: THETA
-        ; CALC_TEMP: TEMP
-        ;
-        ; THETA = (VALUE * 360deg / MAX_VALUE) * (PI / 180)
-        ; EP_X = centerX + radius * sin(theta)
-        ; EP_Y = centerY - radius * cos(theta)
         
-        pop     ecx;centery
-        pop     eax;centerx
-        
-        ; NOTE: ADD AS CONSTANT?
-        fld     [PI]
-        fdiv    [ONEHUNDREDEIGHTY]
-        fstp    [CALC]
+        pop     ecx;centery. FOR MS_CIRCLE. NO PRESERVE
+        pop     eax;centerx. FOR MS_CIRCLE. NO PRESERVE
 
-        fild    DWORD PTR [stS.wMilliseconds]   ; MS
-        fmul    [THREEHUNDREDSIXTY]             ; 360deg
-        fdiv    [MS_MAX_VALUE]                  ; MAX VAL
-        fmul    [CALC]                          ; PI CALC
-        fstp    [CALC]                          ; THETA
-
-        ;CENTERY
-        mov     [float_to_dword], ecx       ; LOAD CENTERY
-        fild    DWORD PTR [float_to_dword]  ; LOADED
-        fld     [CALC]              ; THETA
-        fcos                        ; COS
-        fld     [MS_CLOCK_RADIUS_f] ; RADIUS
-        fmul                        ; MULTIPLY
-
-        fsub                                ; SUBTRACT
-        fstp    [CALC_TEMP]                 ; RES
-
-        ; CAST FLOAT TO INT
-        fld     [CALC_TEMP]
-        fistp   DWORD PTR [float_to_dword]
-        push    float_to_dword
-        
-        ; CENTERX CAST INT TO FLOAT
-        mov     [float_to_dword], eax          
-        fild    DWORD PTR [float_to_dword]
-        fstp    [CALC_TEMP]
-
-        ; radius +
-        fld     [CALC]              ; THETA
-        fsin                        ; SIN
-        fld     [MS_CLOCK_RADIUS_f] ; RADIUS
-        fmul                        ; MULTIPLY
-        fadd    [CALC_TEMP]         ; ADD CENTERX
-        fstp    [CALC_TEMP]         ; LOAD EP_X
-
-        ; CAST FLOAT TO INT
-        fld     [CALC_TEMP]
-        fistp   DWORD PTR [float_to_dword]
-
-        push    float_to_dword             ; X
-        push    hdc
-        call    LineTo
-        test    eax, eax
+        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wMilliseconds], [MS_MAX_VALUE], [MS_CLOCK_RADIUS_f], [MS_HAND_LENGTH] 
+        cmp     edx, 1
         je      DRAW_error
+
 
         ; HOUR HAND
         RGB     HHC_1, HHC_2, HHC_3
@@ -436,15 +391,31 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hpen
         push    hdc
         call    SelectObject
-
         
-        pop     ecx ; CENTERY for main
-        pop     eax ; CENTERX for main
-        ; TODO: PUSH AGAIN?
-        ; push    eax
-        ; push    ecx
+        pop     ecx ; CENTERY for MAIN_CIRCLE
+        pop     eax ; CENTERX for MAIN_CIRCLE
+        push    eax ; CENTERY for MAIN_CIRCLE
+        push    ecx ; CENTERX for MAIN_CIRCLE
+        
+        push    NULL
+        push    ecx
+        push    eax
+        push    hdc
+        call    MoveToEx
+        test    eax, eax
+        je      DRAW_error
+        
+        pop     ecx ; CENTERY for MAIN_CIRCLE
+        pop     eax ; CENTERX for MAIN_CIRCLE
+        push    eax ; CENTERY for MAIN_CIRCLE
+        push    ecx ; CENTERX for MAIN_CIRCLE
+        
+        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wHour], [H_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [H_HAND_LENGTH] 
+        cmp     edx, 1
+        je      DRAW_error
+
         ; MINUTE HAND
-        RGB     MHC_1, MHC_2, MHC_3
+        RGB MHC_1, MHC_2, MHC_3
         push    eax
         push    2
         push    PS_SOLID
@@ -455,9 +426,31 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hpen
         push    hdc
         call    SelectObject
+
+        pop     ecx ; CENTERY for MAIN_CIRCLE
+        pop     eax ; CENTERX for MAIN_CIRCLE
+        push    eax ; CENTERY for MAIN_CIRCLE
+        push    ecx ; CENTERX for MAIN_CIRCLE
+        
+        push    NULL
+        push    ecx
+        push    eax
+        push    hdc
+        call    MoveToEx
+        test    eax, eax
+        je      DRAW_error
+        
+        pop     ecx ; CENTERY for MAIN_CIRCLE
+        pop     eax ; CENTERX for MAIN_CIRCLE
+        push    eax ; CENTERY for MAIN_CIRCLE
+        push    ecx ; CENTERX for MAIN_CIRCLE
+        
+        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wMinute], [M_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [M_HAND_LENGTH] 
+        cmp     edx, 1
+        je      DRAW_error
 
         ; SECOND HAND
-        RGB     SHC_1, SHC_2, SHC_3
+        RGB SHC_1, SHC_2, SHC_3
         push    eax
         push    2
         push    PS_SOLID
@@ -468,6 +461,26 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hpen
         push    hdc
         call    SelectObject
+
+        pop     ecx ; CENTERY for MAIN_CIRCLE
+        pop     eax ; CENTERX for MAIN_CIRCLE
+        push    eax ; CENTERY for MAIN_CIRCLE
+        push    ecx ; CENTERX for MAIN_CIRCLE
+        
+        push    NULL
+        push    ecx
+        push    eax
+        push    hdc
+        call    MoveToEx
+        test    eax, eax
+        je      DRAW_error
+
+        pop     ecx ; CENTERY for MAIN_CIRCLE
+        pop     eax ; CENTERX for MAIN_CIRCLE
+        
+        invoke  LINE_DRAW_PROCEDURE, hdc, [stS.wSecond], [S_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [S_HAND_LENGTH] 
+        cmp     edx, 1
+        je      DRAW_error
 
         lea     eax, hbrush
         push    eax
@@ -487,6 +500,8 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hWnd
         call    KillTimer
 
+        call    TEST_PROC
+
         push    0
         call    PostQuitMessage
         jmp     CASE_OUT
@@ -499,8 +514,172 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         jmp     CASE_OUT
     CASE_OUT:
     ret
+    
+
+    ; LINE_DRAW_PROCEDURE:
+    ;     pop     edx
+    ;     pop     edx
+    ;     pop     edx
+    ;     xor     edx, edx
+    ;     pop     dx
+
+    ;     fld     [PI]
+    ;     fdiv    [ONEHUNDREDEIGHTY]
+    ;     fstp    [CALC]
+
+
+
+    ;     ; !PARAM1
+    ;     fild    WORD PTR [ebp+2]            ; MS
+    ;     fmul    [THREEHUNDREDSIXTY]         ; 360deg
+    ;     ; !PARAM2
+    ;     fdiv    DWORD PTR [ebp+4]           ; MAX VAL
+    ;     fmul    [CALC]                      ; PI CALC
+    ;     fstp    [CALC]                      ; THETA
+
+    ;     ;CENTERY
+    ;     mov     [float_to_dword], ecx       ; LOAD CENTERY
+    ;     fild    DWORD PTR [float_to_dword]  ; LOADED
+    ;     fld     [CALC]                      ; THETA
+    ;     fcos                                ; COS
+    ;     ; !PARAM3
+    ;     fld     DWORD PTR [ebp+8]           ; RADIUS
+    ;     ; !PARAM4
+    ;     fld     DWORD PTR [ebp+12]          ; LENGTH
+    ;     fmul                                ; MULTIPLY
+    ;     fmul
+    ;     fsub                                ; SUBTRACT
+    ;     fstp    [CALC_TEMP]                 ; RES
+
+    ;     ; CAST FLOAT TO INT
+    ;     fld     [CALC_TEMP]
+    ;     fistp   DWORD PTR [float_to_dword]
+    ;     push    float_to_dword
+        
+    ;     ; CENTERX CAST INT TO FLOAT
+    ;     mov     [float_to_dword], eax          
+    ;     fild    DWORD PTR [float_to_dword]
+    ;     fstp    [CALC_TEMP]
+
+    ;     ; radius +
+    ;     fld     [CALC]              ; THETA
+    ;     fsin                        ; SIN
+    ;     ; !PARAM3
+    ;     fld     DWORD PTR [ebp-8]   ; RADIUS
+    ;     ; !PARAM4
+    ;     fld     DWORD PTR [ebp-12]  ; LENGTH
+    ;     fmul
+    ;     fmul                        ; MULTIPLY
+    ;     fadd    [CALC_TEMP]         ; ADD CENTERX
+    ;     fstp    [CALC_TEMP]         ; LOAD EP_X
+
+    ;     ; CAST FLOAT TO INT
+    ;     fld     [CALC_TEMP]
+    ;     fistp   DWORD PTR [float_to_dword]
+
+    ;     push    float_to_dword             ; X
+    ;     push    hdc
+    ;     call    LineTo
+    ;     test    eax, eax
+    ;     je      LINETOERROR
+    ;     jmp     RETIRM
+    ;     LINETOERROR:
+    ;     ; mov     esp, ebp
+    ;     ; pop     ebp
+    ;     jmp     DRAW_error
+    ;     RETIRM:
+    ;     ret
+
+
 WndProc endp
 
+
+LINE_DRAW_PROCEDURE proc hdc:HDC, value:WORD, max_value:REAL4, radius:REAL4, h_length:REAL4
+    LOCAL   float_to_dword:DWORD
+    
+; CALCULATE MS POS
+; EAX: CENTERX
+; ECX: CENTERY
+; EDX: TEMP
+; CALC: THETA
+; CALC_TEMP: TEMP
+;
+; handle_length = handle_length(.f)*radius
+; THETA = (VALUE * 360deg / MAX_VALUE) * (PI / 180)
+; EP_X = centerX + handle_length * sin(theta)
+; EP_Y = centerY - handle_length * cos(theta)
+        
+
+    ; THETASTART
+    fld     [PI]
+    fdiv    [ONEHUNDREDEIGHTY]
+    fstp    [CALC]                      ; PI/180
+    fild    [value]                     ; MS VALUE
+    fmul    [THREEHUNDREDSIXTY]         ; 360deg
+    fdiv    [max_value]                 ; MAX VAL
+    fmul    [CALC]                      ; PI CALC
+    fstp    [CALC]                      ; THETA
+    ; KEEP RANGE 0-2pi
+    ; fld     [TWO_PI]
+    ; fld     [CALC]
+    ; fprem
+    ; fstp    [CALC]
+    ;THETAEND
+
+    ;CENTERY
+    mov     [float_to_dword], ecx       ; LOAD CENTERY
+    fild    DWORD PTR [float_to_dword]  ; LOADED
+    
+    fld     [CALC]                      ; THETA
+    fcos                                ; COS
+
+    fld     [radius]                    ; RADIUS
+    fld     [h_length]                  ; LENGTH
+    fmul                                ; MULTIPLY
+    fmul                                ; THETA MULTIPLY
+
+    fsub                                ; SUBTRACT ECX
+    fstp    [CALC_TEMP]                 ; RES
+
+    ; CAST FLOAT TO INT
+    fld     [CALC_TEMP]
+    fistp   DWORD PTR [float_to_dword]
+    push    [float_to_dword]
+
+    ; CENTERX CAST INT TO FLOAT
+    mov     [float_to_dword], eax          
+    fild    DWORD PTR [float_to_dword]
+    fstp    [CALC_TEMP]
+
+    fld     [CALC]                  ; THETA
+    fsin                            ; SIN
+    
+    fld     [radius]                ; RADIUS
+    fld     [h_length]              ; LENGTH
+    fmul
+    
+    fmul                            ; MULTIPLY
+    fadd    [CALC_TEMP]             ; ADD CENTERX
+    fstp    [CALC_TEMP]             ; LOAD EP_X
+
+    ; CAST FLOAT TO INT
+    fld     [CALC_TEMP]
+    fistp   DWORD PTR [float_to_dword]
+    push    [float_to_dword]        ; X
+
+    push    hdc
+    call    LineTo
+    test    eax, eax
+    je      LINETOERROR
+    xor     edx, edx
+    mov     edx, 0
+    jmp     RETIRM
+    LINETOERROR:
+    xor     edx, edx
+    mov     edx, 1
+    RETIRM:
+    ret
+LINE_DRAW_PROCEDURE endp
 
 TEST_PROC proc
     push    MB_ICONWARNING
