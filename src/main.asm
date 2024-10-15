@@ -250,9 +250,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         RGB     MCC_1, MCC_2, MCC_3
         push    eax
         call    CreateSolidBrush
-
         mov     hbrush, eax
-        
         push    hbrush
         push    hdc
         call    SelectObject
@@ -297,9 +295,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hdc
         call    Ellipse
 
-
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hbrush
 
 
 
@@ -376,8 +372,35 @@ MIN_INC_LOOP:
         jmp     MIN_INC_LOOP
 MIN_INC_LOOP_END:
 
-        lea     eax, hpen
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hpen
+
+        ; MIDDLE CIRCLE
+        RGB     MCC_1, MCC_2, MCC_3
+        push    eax
+        call    CreateSolidBrush
+        mov     hbrush, eax
+        push    hbrush
+        push    hdc
+        call    SelectObject
+        invoke  GetStockObject, NULL_PEN
+        invoke  SelectObject, hdc, eax
+        ACREGPP
+        mov     edx, ecx
+        add     edx, MVISOR_LENGTH
+        push    edx
+        mov     edx, eax
+        add     edx, MVISOR_LENGTH
+        push    edx
+        mov     edx, ecx
+        sub     edx, MVISOR_LENGTH
+        push    edx
+        mov     edx, eax
+        sub     edx, MVISOR_LENGTH
+        push    edx
+        push    hdc
+        call    Ellipse
+        invoke  DeleteObject, hbrush
+
 
         ; HOUR VISORS
         RGB     0,0,0
@@ -450,8 +473,9 @@ MIN_INC_LOOP_END:
             jmp     HOUR_INC_LOOP
         HOUR_INC_LOOP_END:
 
-        lea     eax, hpen
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hpen
+
+
 
         ; MIDDLE CIRCLE
         RGB     MCC_1, MCC_2, MCC_3
@@ -461,29 +485,26 @@ MIN_INC_LOOP_END:
         push    hbrush
         push    hdc
         call    SelectObject
+        invoke  GetStockObject, NULL_PEN
+        invoke  SelectObject, hdc, eax
         ACREGPP
-
         mov     edx, ecx
-        add     edx, VISOR_LENGTH
+        add     edx, HVISOR_LENGTH
         push    edx
-
         mov     edx, eax
-        add     edx, VISOR_LENGTH
+        add     edx, HVISOR_LENGTH
         push    edx
-        
         mov     edx, ecx
-        sub     edx, VISOR_LENGTH
+        sub     edx, HVISOR_LENGTH
         push    edx
-
         mov     edx, eax
-        sub     edx, VISOR_LENGTH
+        sub     edx, HVISOR_LENGTH
         push    edx
-
         push    hdc
         call    Ellipse
+        invoke  DeleteObject, hbrush
 
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        
 
         ; CENTER ELLIPSE
         RGB     0,0,0
@@ -519,8 +540,7 @@ MIN_INC_LOOP_END:
         push    hdc
         call    Ellipse
 
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hbrush
 
         ; MS CIRCLE
         RGB     MSCC_1, MSCC_2, MSCC_3
@@ -566,8 +586,7 @@ MIN_INC_LOOP_END:
         push    hdc
         call    Ellipse
 
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hbrush
 
         ;MS CENTER ELLIPSE
 
@@ -607,9 +626,7 @@ MIN_INC_LOOP_END:
         push    hdc
         call    Ellipse
 
-        lea     eax, hbrush
-        push    eax
-        call    DeleteObject
+        invoke  DeleteObject, hbrush
 
         ; Lines:
         ;   eax: from
@@ -617,8 +634,6 @@ MIN_INC_LOOP_END:
         ;   edx: temp
         ;
         ; MS HAND
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
 
         RGB     MSHC_1, MSHC_2, MSHC_3
         push    eax
@@ -649,11 +664,7 @@ MIN_INC_LOOP_END:
         cmp     edx, 1
         je      DRAW_error
 
-        lea     eax, hpen
-        push    eax
-        call    DeleteObject
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hpen
 
         ; HOUR HAND
         RGB     HHC_1, HHC_2, HHC_3
@@ -700,12 +711,8 @@ MIN_INC_LOOP_END:
         cmp     edx, 1
         je      DRAW_error
 
-        lea     eax, hpen
-        push    eax
-        call    DeleteObject
+        invoke  DeleteObject, hpen
 
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
         ; MINUTE HAND
         RGB MHC_1, MHC_2, MHC_3
         push    eax
@@ -748,12 +755,7 @@ MIN_INC_LOOP_END:
         cmp     edx, 1
         je      DRAW_error
 
-        lea     eax, hpen
-        push    eax
-        call    DeleteObject
-
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hpen
         ; SECOND HAND
         RGB SHC_1, SHC_2, SHC_3
         push    eax
@@ -783,11 +785,7 @@ MIN_INC_LOOP_END:
         cmp     edx, 1
         je      DRAW_error
 
-        lea     eax, hpen
-        invoke  DeleteObject, eax
-
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
+        invoke  DeleteObject, hpen
         
         
         jmp     ENDPAINT
@@ -796,15 +794,6 @@ MIN_INC_LOOP_END:
         ENDPAINT:
         lea     eax, ps
         invoke  EndPaint, hWnd, eax
-        
-        lea     eax, hbrush
-        invoke  DeleteObject, eax
-
-
-        lea     eax, hpen
-        invoke  DeleteObject, eax
-
-
         jmp     CASE_OUT
     CASE_WM_DESTROY:
         push    1

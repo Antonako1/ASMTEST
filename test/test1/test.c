@@ -77,7 +77,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             TextOutA(hdc, 50, 50, buffer, strlen(buffer)); 
             EndPaint(hWnd, &ps);
 
-
             HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 255));  // Blue color
             DeleteObject(hBrush);
             break;
