@@ -1,14 +1,15 @@
 IFNDEF CLOCK_MACROS
 ; MACROS
     CLOCK_REF_RATE      equ 50
-    MAIN_CLOCK_RADIUS   equ 250
-    ; H_HAND_LENGTH       equ 60
-    ; M_HAND_LENGTH       equ 25
-    ; S_HAND_LENGTH       equ 50
+    MAIN_CLOCK_RADIUS   equ 250     ;TODO: .DATA AND CALCULATE ON RESIZE!
+    MS_CLOCK_RADIUS     equ 55      ;TODO: .DATA AND CALCULATE ON RESIZE!
+    
+    ;SAME AS RADIUS
+    VISOR_LENGTH        equ 135     ;TODO: .DATA AND CALCULATE ON RESIZE!
+    VISOR_FROM_BOTTOM   equ 100     ;TODO: .DATA AND CALCULATE ON RESIZE!
 
-    MS_CLOCK_RADIUS     equ 75
-    ; MS_HAND_LENGTH      equ 90
-
+    M_MAX_VALUE_INT     equ 60
+    H_MAX_VALUE_INT     equ 12
     ;MAIN_CLOCK_COLOUR
     MCC_1               equ 30
     MCC_2               equ 30
@@ -40,27 +41,41 @@ IFNDEF CLOCK_MACROS
     HHC_3              equ 150
 
 
+    ONE_START_X         equ 0
+    ONE_START_Y         equ 0
+    ONE_END_X           equ 0
+    ONE_END_Y           equ 0
 
-    ; STATIC LINE POS'
-    ; TWELVE_START_X      equ 390
-    TWELVE_START_Y      equ 75
-    ; TWELVE_END_X        equ 390
-    TWELVE_END_Y        equ 200
+    TWO_START_X         equ 0
+    TWO_START_Y         equ 0
+    TWO_END_X           equ 0
+    TWO_END_Y           equ 0
+    FOUR_START_X        equ 0
+    FOUR_START_Y        equ 0
+    FOUR_END_X          equ 0
+    FOUR_END_Y          equ 0
+    FIVE_START_X        equ 0
+    FIVE_START_Y        equ 0
+    FIVE_END_X          equ 0
+    FIVE_END_Y          equ 0
+    SEVEN_START_X       equ 0
+    SEVEN_START_Y       equ 0
+    SEVEN_END_X         equ 0
+    SEVEN_END_Y         equ 0
+    EIGHT_START_X       equ 0
+    EIGHT_START_Y       equ 0
+    EIGHT_END_X         equ 0
+    EIGHT_END_Y         equ 0
+    TEN_START_X         equ 0
+    TEN_START_Y         equ 0
+    TEN_END_X           equ 0
+    TEN_END_Y           equ 0
+    ELEVEN_START_X      equ 0
+    ELEVEN_START_Y      equ 0
+    ELEVEN_END_X        equ 0
+    ELEVEN_END_Y        equ 0
 
-    THREE_START_X       equ 150
-    ; THREE_START_Y       equ 100
-    THREE_END_X         equ 275
-    ; THREE_END_Y         equ 200
 
-    ; SIX_START_X         equ 390
-    SIX_START_Y         equ 400
-    ; SIX_END_X           equ 390
-    SIX_END_Y           equ 550
-
-    NINE_START_X        equ 475
-    ; NINE_START_Y        equ 100
-    NINE_END_X          equ 600
-    ; NINE_END_Y          equ 200
 
     MIDDLE_CIRCLE_SIZE  equ 10
     MS_MIDDLE_CIRCLE_SIZE   equ 5
@@ -74,6 +89,13 @@ IFNDEF CLOCK_MACROS
         mov     al, red
     ENDM
 
+    ACREGPP MACRO
+        pop     ecx
+        pop     eax
+        push    eax
+        push    ecx
+    ENDM
+
     FSTPCLEAR MACRO
         fstp    st(0)
         fstp    st(1)
@@ -84,7 +106,47 @@ IFNDEF CLOCK_MACROS
         fstp    st(6)
         fstp    st(7)
     ENDM
+
+    ; RESULT IN EAX, % in edx
+    QDIVISION MACRO DIVIDENT, DIVIDER
+        push    ebx
+
+        xor     eax, eax
+        mov     ebx, eax
+        mov     edx, eax
+
+        mov     eax, DIVIDENT
+        mov     ebx, DIVIDER
+        div     ebx
+
+        pop     ebx
+    ENDM
+
+    ;RESULT IN EAX
+    QMULTIPLICATION MACRO __X__, __Y__
+        push    ebp
+        xor     eax, eax
+        mov     ebx, ebx
+
+        mov     eax, __X__
+        mov     ebx, __Y__
+        mul     ebx
+        pop     ebp
+    ENDM
 ; MACROEND
 ELSE
 	echo WARNING: Duplicate include file (macro.inc)
 ENDIF
+
+        ; push    ebx
+
+        ; xor     eax, eax
+        ; mov     ebx, eax
+        ; mov     edx, eax
+
+        ; mov     eax, MAIN_CLOCK_RADIUS
+        ; mov     ebx, 3
+        ; div     ebx
+        ; mov     edx, eax
+        
+        ; pop     ebx

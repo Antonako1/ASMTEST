@@ -13,7 +13,6 @@ includelib      \masm32\lib\kernel32.lib
 includelib      \masm32\lib\user32.lib
 includelib      \masm32\lib\gdi32.lib
 
-; create_circle   proto   :DWORD, :DWORD
 update_get_stS  proto
 WinMain         proto   :DWORD, :DWORD, :DWORD, :DWORD
 extern C        sprintf :proc
@@ -37,33 +36,36 @@ LINE_DRAW_PROCEDURE     proto :HDC, :REAL4, :REAL4, :REAL4, :REAL4
     msgText2        DB  "DRAW ERROR!", 0
     msgText3        DB  "TEXT ERROR!", 0
 
-    PI              REAL4 3.1415927410125732
-    TWO_PI          REAL4 6.2831854820251464
-    CALC            REAL4 0.0000000000000000   
-    CALC_TEMP       REAL4 0.0000000000000000  
+    PI                      REAL4 3.1415927410125732
+    TWO_PI                  REAL4 6.2831854820251464
+    CALC                    REAL4 0.0000000000000000   
+    CALC_TEMP               REAL4 0.0000000000000000  
 
-THREEHUNDREDSIXTY   REAL4 360.0
-ONEHUNDREDEIGHTY    REAL4 180.0
+    THREEHUNDREDSIXTY       REAL4 360.0
+    ONEHUNDREDEIGHTY        REAL4 180.0
+    ONEHUNDRED              REAL4 100.0
+    ONE                     REAL4 1.0
+    POINTHALF               REAL4 0.5
 
-MS_MAX_VALUE        REAL4 1000.0
-H_MAX_VALUE         REAL4 12.0
-M_MAX_VALUE         REAL4 60.0
-S_MAX_VALUE         REAL4 60.0
+    MS_MAX_VALUE            REAL4 1000.0
+    H_MAX_VALUE             REAL4 12.0
+    M_MAX_VALUE             REAL4 60.0
+    S_MAX_VALUE             REAL4 60.0
 
-MS_CLOCK_RADIUS_f   REAL4 75.0
-MAIN_CLOCK_RADIUS_f REAL4 250.0
+    MS_CLOCK_RADIUS_f       REAL4 55.0
+    MAIN_CLOCK_RADIUS_f     REAL4 250.0
 
-H_HAND_LENGTH       REAL4 0.9
-M_HAND_LENGTH       REAL4 0.8
-S_HAND_LENGTH       REAL4 0.95
-MS_HAND_LENGTH      REAL4 0.8
+    H_HAND_LENGTH           REAL4 0.9
+    M_HAND_LENGTH           REAL4 0.85
+    S_HAND_LENGTH           REAL4 0.95
+    MS_HAND_LENGTH          REAL4 0.8
+    VISOR_HAND_LENGTH       REAL4 0.95
 
 .CODE
 Start:
 WinMainCRTStartup proc
     LOCAL   msg:MSG
     LOCAL   hWnd:HWND
-    ; LOCAL   hInst:HINSTANCE
 
     push    NULL
     call    GetModuleHandle
@@ -153,7 +155,6 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     LOCAL   hbrush:HBRUSH
     LOCAL   hpen:HPEN
     LOCAL   float_help:REAL4
-    ; LOCAL: CIRCLE, LINE x3 || CIRCLE x2, LINE x4 (w/ ms)
 
     ;=========================
     cmp     uMsg, WM_DESTROY
@@ -301,10 +302,193 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ; test    eax, eax
         ; je      DRAW_error
 
-        push    hbrush
-        call    DeleteObject
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
         ; test    eax, eax
         ; je      DRAW_error
+
+
+        ; CLOCK LINES
+        RGB     0,0,0
+        invoke  CreatePen, PS_SOLID, 1, eax
+        mov     hpen, eax
+        invoke  SelectObject, hdc, eax
+
+        ; MINUTE VISORS
+        mov     edx, 0
+MIN_INC_LOOP:
+        cmp     edx, M_MAX_VALUE_INT
+        jge     MIN_INC_LOOP_END
+        ACREGPP
+        push    edx
+        invoke  MoveToEx, hdc, eax, ecx, NULL
+        pop     edx
+        ACREGPP
+        push    edx
+
+        ;THETASTART
+        fld     [PI]
+        fdiv    [ONEHUNDREDEIGHTY]
+        fstp    [CALC]                      ; PI/180
+        mov     [float_help], edx
+        fild    DWORD PTR [float_help]      ; M VALUE
+        fmul    [THREEHUNDREDSIXTY]         ; 360deg
+        fdiv    [M_MAX_VALUE]               ; MAX VAL
+        fmul    [CALC]                      ; PI CALC
+        fstp    [CALC]   
+        ;THETASTART
+
+        ;CENTERY
+        mov     [float_help], ecx       ; LOAD CENTERY
+        fild    DWORD PTR [float_help]  ; LOADED
+        fld     [CALC]                  ; THETA
+        fcos                            ; COS
+        fld     [MAIN_CLOCK_RADIUS_f]   ; RADIUS
+        fld     [VISOR_HAND_LENGTH]     ; LENGTH
+        fmul                            ; MULTIPLY
+        fmul                            ; THETA MULTIPLY
+        fsub                            ; SUBTRACT ECX
+        fstp    [CALC_TEMP]             ; RES
+
+        ; CAST FLOAT TO INT
+        fld     [CALC_TEMP]
+        fistp   DWORD PTR [float_help]
+        push    [float_help]            ; Y
+
+        ; CENTERX CAST INT TO FLOAT
+        mov     [float_help], eax          
+        fild    DWORD PTR [float_help]
+        fstp    [CALC_TEMP]
+        fld     [CALC]                  ; THETA
+        fsin                            ; SIN
+        fld     [MAIN_CLOCK_RADIUS_f]   ; RADIUS
+        fld     [VISOR_HAND_LENGTH]     ; LENGTH
+        fmul
+        fmul                            ; MULTIPLY
+        fadd    [CALC_TEMP]             ; ADD CENTERX
+        fstp    [CALC_TEMP]             ; LOAD EP_X
+
+        ; CAST FLOAT TO INT
+        fld     [CALC_TEMP]
+        fistp   DWORD PTR [float_help]
+        push    [float_help]            ; X
+
+        push    hdc
+        call    LineTo
+
+        pop     edx
+        inc     edx
+        jmp     MIN_INC_LOOP
+MIN_INC_LOOP_END:
+
+        lea     eax, hpen
+        invoke  DeleteObject, eax
+
+        ; HOUR VISORS
+        RGB     0,0,0
+        invoke  CreatePen, PS_SOLID, 2, eax
+        mov     hpen, eax
+        invoke  SelectObject, hdc, eax
+        mov     edx, 0
+        HOUR_INC_LOOP:
+            cmp     edx, H_MAX_VALUE_INT
+            jge     HOUR_INC_LOOP_END
+            ACREGPP
+            push    edx
+            invoke  MoveToEx, hdc, eax, ecx, NULL
+            pop     edx
+            ACREGPP
+            push    edx
+
+            ;THETASTART
+            fld     [PI]
+            fdiv    [ONEHUNDREDEIGHTY]
+            fstp    [CALC]                      ; PI/180
+            mov     [float_help], edx
+            fild    DWORD PTR [float_help]      ; M VALUE
+            fmul    [THREEHUNDREDSIXTY]         ; 360deg
+            fdiv    [H_MAX_VALUE]               ; MAX VAL
+            fmul    [CALC]                      ; PI CALC
+            fstp    [CALC]   
+            ;THETASTART
+
+            ;CENTERY
+            mov     [float_help], ecx       ; LOAD CENTERY
+            fild    DWORD PTR [float_help]  ; LOADED
+            fld     [CALC]                  ; THETA
+            fcos                            ; COS
+            fld     [MAIN_CLOCK_RADIUS_f]   ; RADIUS
+            fld     [VISOR_HAND_LENGTH]     ; LENGTH
+            fmul                            ; MULTIPLY
+            fmul                            ; THETA MULTIPLY
+            fsub                            ; SUBTRACT ECX
+            fstp    [CALC_TEMP]             ; RES
+
+            ; CAST FLOAT TO INT
+            fld     [CALC_TEMP]
+            fistp   DWORD PTR [float_help]
+            push    [float_help]            ; Y
+
+            ; CENTERX CAST INT TO FLOAT
+            mov     [float_help], eax          
+            fild    DWORD PTR [float_help]
+            fstp    [CALC_TEMP]
+            fld     [CALC]                  ; THETA
+            fsin                            ; SIN
+            fld     [MAIN_CLOCK_RADIUS_f]   ; RADIUS
+            fld     [VISOR_HAND_LENGTH]     ; LENGTH
+            fmul
+            fmul                            ; MULTIPLY
+            fadd    [CALC_TEMP]             ; ADD CENTERX
+            fstp    [CALC_TEMP]             ; LOAD EP_X
+
+            ; CAST FLOAT TO INT
+            fld     [CALC_TEMP]
+            fistp   DWORD PTR [float_help]
+            push    [float_help]            ; X
+
+            push    hdc
+            call    LineTo
+
+            pop     edx
+            inc     edx
+            jmp     HOUR_INC_LOOP
+        HOUR_INC_LOOP_END:
+
+        lea     eax, hpen
+        invoke  DeleteObject, eax
+
+        ; MIDDLE CIRCLE
+        RGB     MCC_1, MCC_2, MCC_3
+        push    eax
+        call    CreateSolidBrush
+        mov     hbrush, eax
+        push    hbrush
+        push    hdc
+        call    SelectObject
+        ACREGPP
+
+        mov     edx, ecx
+        add     edx, VISOR_LENGTH
+        push    edx
+
+        mov     edx, eax
+        add     edx, VISOR_LENGTH
+        push    edx
+        
+        mov     edx, ecx
+        sub     edx, VISOR_LENGTH
+        push    edx
+
+        mov     edx, eax
+        sub     edx, VISOR_LENGTH
+        push    edx
+
+        push    hdc
+        call    Ellipse
+
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
 
         ; CENTER ELLIPSE
         RGB     0,0,0
@@ -315,13 +499,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hbrush
         push    hdc
         call    SelectObject
-
-
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-
+        ACREGPP
         ; BOTTOM
         xor     edx, edx
         mov     edx, ecx
@@ -346,73 +524,17 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hdc
         call    Ellipse
 
-        ; CLOCK LINES
-        RGB     0,0,0
-        invoke  CreatePen, PS_SOLID, 2, eax
-        mov     hpen, eax
-        invoke  SelectObject, hdc, eax
-
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-
-        invoke  MoveToEx, hdc, eax, TWELVE_START_Y, NULL
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  LineTo, hdc, eax, TWELVE_END_Y
-
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  MoveToEx, hdc, THREE_START_X, ecx, NULL
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  LineTo, hdc, THREE_END_X, ecx
-        
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  MoveToEx, hdc, eax, SIX_START_Y, NULL
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  LineTo, hdc, eax, SIX_END_Y
-        
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  MoveToEx, hdc, NINE_START_X, ecx, NULL
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
-        invoke  LineTo, hdc, NINE_END_X, ecx
-
-        lea     eax, hpen
+        lea     eax, hbrush
         invoke  DeleteObject, eax
-
 
         ; MS CIRCLE
         RGB     MSCC_1, MSCC_2, MSCC_3
         push    eax
         call    CreateSolidBrush
-        ; test    eax, eax
-        ; je      DRAW_error
         mov     hbrush, eax
         push    hbrush
         push    hdc
         call    SelectObject
-        ; test    eax, eax
-        ; je      DRAW_error
         
         xor     eax, eax
         mov     ecx, eax
@@ -448,9 +570,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
         push    hdc
         call    Ellipse
-        ; test    eax, eax
-        ; je      DRAW_error
 
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
 
         ;MS CENTER ELLIPSE
 
@@ -464,10 +586,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         call    SelectObject
 
 
-        pop     ecx
-        pop     eax
-        push    eax
-        push    ecx
+        ACREGPP
 
         ; BOTTOM
         xor     edx, edx
@@ -496,8 +615,6 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hbrush
         push    eax
         call    DeleteObject
-        ; test    eax, eax
-        ; je      DRAW_error
 
         ; Lines:
         ;   eax: from
@@ -505,33 +622,28 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ;   edx: temp
         ;
         ; MS HAND
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
+
         RGB     MSHC_1, MSHC_2, MSHC_3
         push    eax
         push    2
         push    PS_SOLID
         call    CreatePen
-        ; test    eax, eax
-        ; je      DRAW_error
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
-        ; test    eax, eax
-        ; je      DRAW_error
         
-
+        ; ecx CENTERY FOR MS_CIRCLE
+        ; eax CENTERX FOR MS_CIRCLE
+        ACREGPP
         
-        pop     ecx ; CENTERY FOR MS_CIRCLE
-        pop     eax ; CENTERX FOR MS_CIRCLE
-        push    eax
-        push    ecx
         push    NULL
         push    ecx
         push    eax
         push    hdc
         call    MoveToEx
-        ; test    eax, eax
-        ; je      DRAW_error
         
         pop     ecx;centery. FOR MS_CIRCLE. NO PRESERVE
         pop     eax;centerx. FOR MS_CIRCLE. NO PRESERVE
@@ -545,43 +657,49 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hpen
         push    eax
         call    DeleteObject
-        ; test    eax, eax
-        ; je      DRAW_error
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
 
         ; HOUR HAND
         RGB     HHC_1, HHC_2, HHC_3
         push    eax
-        push    3
+        push    4
         push    PS_SOLID
         call    CreatePen
-        ; test    eax, eax
-        ; je      DRAW_error
+
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
-        ; test    eax, eax
-        ; je      DRAW_error
-        
-        pop     ecx ; CENTERY for MAIN_CIRCLE
-        pop     eax ; CENTERX for MAIN_CIRCLE
-        push    eax ; CENTERY for MAIN_CIRCLE
-        push    ecx ; CENTERX for MAIN_CIRCLE
+
+        ; ecx CENTERY FOR MS_CIRCLE
+        ; eax CENTERX FOR MS_CIRCLE
+        ACREGPP
         
         push    NULL
         push    ecx
         push    eax
         push    hdc
         call    MoveToEx
-        ; test    eax, eax
-        ; je      DRAW_error
+
+        ; ecx CENTERY FOR MS_CIRCLE
+        ; eax CENTERX FOR MS_CIRCLE
+        ACREGPP
         
-        pop     ecx ; CENTERY for MAIN_CIRCLE
-        pop     eax ; CENTERX for MAIN_CIRCLE
-        push    eax ; CENTERY for MAIN_CIRCLE
-        push    ecx ; CENTERX for MAIN_CIRCLE
-        
+
+        ; cross multiplication
+        ; 60m|100%
+        ; {x}| x%
         fild    WORD PTR [stS.wHour]
+        fild    WORD PTR [stS.wMinute]
+        fmul   [ONEHUNDRED]
+        fdiv   [M_MAX_VALUE]
+        fcom    [ONEHUNDRED]
+        jne     SKIPSUBTRACTIONWORK_MIN
+        fsub   DWORD PTR [ONE]
+        SKIPSUBTRACTIONWORK_MIN:
+        fdiv   DWORD PTR [ONEHUNDRED]
+        fadd
         fstp    float_help
         invoke  LINE_DRAW_PROCEDURE, hdc, float_help, [H_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [H_HAND_LENGTH] 
         cmp     edx, 1
@@ -590,43 +708,46 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hpen
         push    eax
         call    DeleteObject
-        ; test    eax, eax
-        ; je      DRAW_error
 
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
         ; MINUTE HAND
         RGB MHC_1, MHC_2, MHC_3
         push    eax
         push    2
         push    PS_SOLID
         call    CreatePen
-        ; test    eax, eax
-        ; je      DRAW_error
+
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
-        ; test    eax, eax
-        ; je      DRAW_error
 
-        pop     ecx ; CENTERY for MAIN_CIRCLE
-        pop     eax ; CENTERX for MAIN_CIRCLE
-        push    eax ; CENTERY for MAIN_CIRCLE
-        push    ecx ; CENTERX for MAIN_CIRCLE
+
+        ; ecx CENTERY FOR MS_CIRCLE
+        ; eax CENTERX FOR MS_CIRCLE
+        ACREGPP
         
         push    NULL
         push    ecx
         push    eax
         push    hdc
         call    MoveToEx
-        ; test    eax, eax
-        ; je      DRAW_error
-        
-        pop     ecx ; CENTERY for MAIN_CIRCLE
-        pop     eax ; CENTERX for MAIN_CIRCLE
-        push    eax ; CENTERY for MAIN_CIRCLE
-        push    ecx ; CENTERX for MAIN_CIRCLE
+
+        ; ecx CENTERY FOR MS_CIRCLE
+        ; eax CENTERX FOR MS_CIRCLE
+        ACREGPP
         
         fild    WORD PTR [stS.wMinute]
+        fild    WORD PTR [stS.wSecond]
+        fmul    [ONEHUNDRED]
+        fdiv    [S_MAX_VALUE]
+        fcom    [ONEHUNDRED]
+        jne     SKIPSUBTRACTIONWORK_SEC
+        fsub    DWORD PTR [ONE]
+        SKIPSUBTRACTIONWORK_SEC:
+        fdiv   DWORD PTR [ONEHUNDRED]
+        fadd
         fstp    float_help
         invoke  LINE_DRAW_PROCEDURE, hdc, float_help, [M_MAX_VALUE], [MAIN_CLOCK_RADIUS_f], [M_HAND_LENGTH] 
         cmp     edx, 1
@@ -635,32 +756,28 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         lea     eax, hpen
         push    eax
         call    DeleteObject
-        ; test    eax, eax
-        ; je      DRAW_error
 
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
         ; SECOND HAND
         RGB SHC_1, SHC_2, SHC_3
         push    eax
         push    1
         push    PS_SOLID
         call    CreatePen
-        ; test    eax, eax
-        ; je      DRAW_error
+
         mov     hpen, eax
         push    hpen
         push    hdc
         call    SelectObject
-        ; test    eax, eax
-        ; je      DRAW_error
 
-        pop     ecx ; CENTERY for MAIN_CIRCLE
-        pop     eax ; CENTERX for MAIN_CIRCLE
-        push    eax ; CENTERY for MAIN_CIRCLE
-        push    ecx ; CENTERX for MAIN_CIRCLE
+
+        ; ecx CENTERY FOR MS_CIRCLE
+        ; eax CENTERX FOR MS_CIRCLE
+        ACREGPP
         
         invoke  MoveToEx, hdc, eax, ecx, NULL
-        ; test    eax, eax
-        ; je      DRAW_error
+
 
         pop     ecx ; CENTERY for MAIN_CIRCLE
         pop     eax ; CENTERX for MAIN_CIRCLE
@@ -673,9 +790,9 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
         lea     eax, hpen
         invoke  DeleteObject, eax
-        ; test    eax, eax
-        ; je      DRAW_error
 
+        lea     eax, hbrush
+        invoke  DeleteObject, eax
         
         
         jmp     ENDPAINT
@@ -684,18 +801,14 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ENDPAINT:
         lea     eax, ps
         invoke  EndPaint, hWnd, eax
-        ; test    eax, eax
-        ; je      DRAW_error
         
         lea     eax, hbrush
         invoke  DeleteObject, eax
-        ; test    eax, eax
-        ; je      DRAW_error
+
 
         lea     eax, hpen
         invoke  DeleteObject, eax
-        ; test    eax, eax
-        ; je      DRAW_error 
+
 
         jmp     CASE_OUT
     CASE_WM_DESTROY:
@@ -703,7 +816,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    hWnd
         call    KillTimer
 
-        call    FAIL_MESSAGE_1
+        ; call    FAIL_MESSAGE_1
 
         push    0
         call    PostQuitMessage

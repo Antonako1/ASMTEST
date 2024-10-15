@@ -5,7 +5,7 @@ setlocal
 cd %~dp0
 SET "TOOLSPATH=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools"
 SET "MASMPATH=C:\masm32\bin"
-SET /A "RUN_AFTER_COMPILE=1" 
+SET /A "RUN_AFTER_COMPILE=%1" 
 
 if not defined DevEnvDir ( 
     call "%TOOLSPATH%\VsDevCmd.bat"
