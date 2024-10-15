@@ -245,21 +245,18 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         push    eax
         push    hWnd
         call    GetClientRect
-        ; test    eax, eax
-        ; je      DRAW_error      ;??
+
 
         RGB     MCC_1, MCC_2, MCC_3
         push    eax
         call    CreateSolidBrush
-        ; test    eax, eax
-        ; je      DRAW_error
+
         mov     hbrush, eax
         
         push    hbrush
         push    hdc
         call    SelectObject
-        ; test    eax, eax
-        ; je      DRAW_error
+
         ;   CIRCLES:
         ;       eax: centerX
         ;       ecx: centerY
@@ -299,13 +296,11 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         
         push    hdc
         call    Ellipse
-        ; test    eax, eax
-        ; je      DRAW_error
+
 
         lea     eax, hbrush
         invoke  DeleteObject, eax
-        ; test    eax, eax
-        ; je      DRAW_error
+
 
 
         ; CLOCK LINES
